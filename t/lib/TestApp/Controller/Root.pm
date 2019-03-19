@@ -35,30 +35,13 @@ sub index :Path :Args(0) {
     $c->response->body( $c->welcome_message );
 }
 
-# sub conneg :Local :ActionClass('+CatalystX::Action::Negotiate') {
-#     my ($self, $c) = @_;
-
-#     my @variants = @{$c->stash->{variants} || []};
-
-#     $c->log->debug(length @variants);
-#     $c->log->debug($c->res->status);
-
-#     # if (length @variants) {
-#     #     $c->res->status(200);
-#     #     #$c->res->body(length @variants);
-#     # }
-#     # else {
-#     #     $c->res->body('fail');
-#     # }
-# }
-
 =head2 default
 
 Standard 404 error page
 
 =cut
 
-sub default :Path :ActionClass('+CatalystX::Action::Negotiate') {
+sub default :Path :Does('+CatalystX::Action::Negotiate') {
     my ( $self, $c ) = @_;
 
     $c->response->body( 'Page not found' );

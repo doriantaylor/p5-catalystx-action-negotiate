@@ -4,13 +4,11 @@ use 5.010;
 use strict;
 use warnings;
 
-use Moose;
+use Moose::Role;
 use namespace::autoclean;
 
 use Path::Class;
 use HTTP::Negotiate;
-
-extends 'Catalyst::Action';
 
 with 'Role::MimeInfo';
 
@@ -28,7 +26,7 @@ our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
-    sub default : ActionClass('+CatalystX::Action::Negotiate') {
+    sub default :Path :Does('+CatalystX::Action::Negotiate') {
         my ($self, $c) = @_;
 
         # obtain variants (if you care)
@@ -145,7 +143,7 @@ dynamic ones, or overwrite the list with purely dynamic variants.
 
 =cut
 
-sub execute {
+before execute => sub {
     my $self = shift;
     my ($ctl, $c) = @_;
 
@@ -267,20 +265,37 @@ sub execute {
                          undef, undef, undef, $st->size, $st->mtime ];
     }
 
+    # stash goodies
+    my $pkg         = __PACKAGE__;
+    $pkg            = $c->stash->{$pkg} ||= {};
+    $pkg->{ps}      = \@ps;
+    $pkg->{slash}   = $slash;
+    $pkg->{files}   = \%f;
+    $pkg->{indices} = \%i;
+
     # assign variants to stash
+
     $c->stash->{variants} = \@variants;
+};
 
-    # require Data::Dumper;
-    # warn Data::Dumper::Dumper(\@variants);
-
-    # run the next method
-    $self->next::method(@_);
+after execute => sub {
+    my $self = shift;
+    my ($ctl, $c) = @_;
+    my $req  = $c->req;
+    my $resp = $c->res;
 
     return if $resp->status < 400;
 
+    my $pkg   = __PACKAGE__;
+    $pkg      = $c->stash->{$pkg};
+    my @ps    = @{$pkg->{ps}};
+    my $slash = $pkg->{slash};
+    my %f     = %{$pkg->{files}};
+    my %i     = %{$pkg->{indices}};
+
     # overwrite whatever came back from the caller
     my %valt;
-    @variants = do {
+    my @variants = do {
         my $i = 0;
 
         map { my $k = sprintf '%08x', $i++; $valt{$k} = $_;
@@ -296,6 +311,8 @@ sub execute {
     # $c->log->debug('Accept: ' . $acc);
     $hdr->push_header(Accept => '*/*;q=0.5') unless $acc and $acc =~ m!\*/\*!;
     # perform the negotiation
+
+
     my $chosen = HTTP::Negotiate::choose(\@variants, $hdr);
 
     unless ($chosen) {
@@ -376,7 +393,7 @@ sub execute {
     # assume something downstream knows what to do with this
     $resp->status(200);
     $resp->body($body);
-}
+};
 
 =head1 SEE ALSO
 
