@@ -1,0 +1,104 @@
+NAME
+    CatalystX::Action::Negotiate - ActionClass for content negotiation
+
+VERSION
+    Version 0.01
+
+SYNOPSIS
+        sub default : ActionClass('+CatalystX::Action::Negotiate') {
+            my ($self, $c) = @_;
+
+            # obtain variants (if you care)
+            my @variants = @{$c->stash->{variants}};
+
+            # maybe manipulate them? i dunno
+
+            # set them back, or set entirely new ones
+            $c->stash->{variants} = \@variants;
+
+            # action class negotiates variants and returns the winner
+        }
+
+DESCRIPTION
+    This module serves content-negotiated static content from the document
+    root. It also affords mixing dynamic variants in with static variants,
+    the list of which is passed directly into the "choose" in
+    HTTP::Negotiate function. The winning variant is chosen from the various
+    "Accept-*" request headers.
+
+    As with Apache and other Web servers, dimensions for static variants are
+    derived from file extensions. Currently the only supported dimension is
+    MIME content type.
+
+    There is a slight difference in the behaviour between this module and
+    Apache: whereas there is one or more files of the form "foo.*" alongside
+    a directory called "foo" containing one or more files with the slug
+    "index", these will all be lumped into the set of variants. The
+    customary trailing slash, however, will only be applied in the case that
+    a "foo/index.*" file is chosen over a "foo.*" file. This is different
+    from Apache in that the latter ignores "foo.*" files if there is also a
+    directory present called "foo". The purpose of this change is to provide
+    an easy way to style URIs *without* the trailing slash while still
+    providing for descendants along the same URI path.
+
+METHODS
+  execute
+    Executes the action which generates a list of variants, tests it against
+    the request headers, and ultimately chooses one. You don't call this
+    directly.
+
+    The calling controller action is sandwiched between the
+    variant-generating operation and the variant-selecting operation. It is
+    placed as an "ARRAY" reference for your convenience in
+    "$c->stash->{variants}". This structure is exactly the same as that
+    which is passed into HTTP::Negotiate, save for two exceptions:
+
+    1.  Variants do not need to be a string identifier, but in fact can be
+        anything that can be consumed by a view or middleware component,
+        e.g., a file handle or any other kind of supported object.
+
+    2.  Append an additional integer to the end of a variant's record to
+        supply an artificial "Last-Modified" value as a UNIX time stamp.
+
+SEE ALSO
+    *   Catalyst::Action
+
+    *   HTTP::Negotiate
+
+    *   Role::MimeInfo
+
+AUTHOR
+    Dorian Taylor, "<dorian at cpan.org>"
+
+BUGS
+    Please report bugs on GitHub
+    <https://github.com/doriantaylor/p5-catalystx-action-negotiate/issues>.
+
+SUPPORT
+    You can find documentation for this module with the perldoc command.
+
+        perldoc CatalystX::Action::Negotiate
+
+    You can also look for information at:
+
+    *   MetaCPAN
+
+        <http://metacpan.org/release/CatalystX-Action-Negotiate/>
+
+    *   The source
+
+        <https://github.com/doriantaylor/p5-catalystx-action-negotiate>
+
+LICENSE AND COPYRIGHT
+    Copyright 2019 Dorian Taylor.
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may
+    not use this file except in compliance with the License. You may obtain
+    a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>.
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
