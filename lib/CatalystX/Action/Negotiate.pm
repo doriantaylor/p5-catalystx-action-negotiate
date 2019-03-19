@@ -14,7 +14,7 @@ with 'Role::MimeInfo';
 
 =head1 NAME
 
-CatalystX::Action::Negotiate - ActionClass for content negotiation
+CatalystX::Action::Negotiate - ActionRole for content negotiation
 
 =head1 VERSION
 
@@ -70,8 +70,8 @@ Interacting with the action in a handler goes as follows:
 =item 1.
 
 The action runs and first attempts to collect any eligible static
-variants found by concatenating the request-URI to document root. It
-puts what it finds in C<< $c->stash->{variants} >>. To indicate the
+variants found by concatenating the request-URI to the document root.
+It puts what it finds in C<< $c->stash->{variants} >>. To indicate the
 indeterminate state of the response to the caller, the status is
 initially set to 404.
 
@@ -87,8 +87,8 @@ the action proceeds to select a variant and set the appropriate headers.
 
 =item 4.
 
-A trailing-slash check is performed to match the request-URI to the
-internal representation, redirecting if necessary with a code 301.
+The action performs a trailing-slash check to match the request-URI to
+the internal representation, redirecting if necessary with a code 301.
 
 =item 5.
 
@@ -99,16 +99,6 @@ the client already has the latest version of the document.
 
 If the action has not terminated the response by now, it sets the
 response body to the variant and the status to 200.
-
-=back
-
-=head1 METHODS
-
-=head2 execute
-
-Executes the action which generates a list of variants, tests it
-against the request headers, and ultimately chooses one. You don't
-call this directly.
 
 The calling controller action is sandwiched between the
 variant-generating operation and the variant-selecting operation. It
