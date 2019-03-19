@@ -37,7 +37,7 @@ our $VERSION = '0.01';
         # set them back, or set entirely new ones
         $c->stash->{variants} = \@variants;
 
-        # action class negotiates variants and returns the winner
+        # action role negotiates variants and returns the winner
     }
 
 =head1 DESCRIPTION

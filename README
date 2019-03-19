@@ -16,7 +16,7 @@ SYNOPSIS
             # set them back, or set entirely new ones
             $c->stash->{variants} = \@variants;
 
-            # action class negotiates variants and returns the winner
+            # action role negotiates variants and returns the winner
         }
 
 DESCRIPTION
