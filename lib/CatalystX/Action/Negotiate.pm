@@ -65,6 +65,44 @@ there is also a directory present called C<foo>. The purpose of this
 change is to provide an easy way to style URIs I<without> the trailing
 slash while still providing for descendants along the same URI path.
 
+Interacting with the action in a handler goes as follows:
+
+=over 4
+
+=item 1.
+
+The action runs and first attempts to collect any eligible static
+variants found by concatenating the request-URI to document root. It
+puts what it finds in C<< $c->stash->{variants} >>. To indicate the
+indeterminate state of the response to the caller, the status is
+initially set to 404.
+
+=item 2.
+
+The action runs the calling handler, offering it an opportunity to
+manipulate the variant list or intercede in the response.
+
+=item 3.
+
+If the handler has not changed the response code to a value below 400,
+the action proceeds to select a variant and set the appropriate headers.
+
+=item 4.
+
+A trailing-slash check is performed to match the request-URI to the
+internal representation, redirecting if necessary with a code 301.
+
+=item 5.
+
+An C<If-Modified-Since> check is performed, which will return 304 if
+the client already has the latest version of the document.
+
+=item 6.
+
+If the action has not terminated the response by now, it sets the
+response body to the variant and the status to 200.
+
+=back
 
 =head1 METHODS
 
@@ -78,7 +116,8 @@ The calling controller action is sandwiched between the
 variant-generating operation and the variant-selecting operation. It
 is placed as an C<ARRAY> reference for your convenience in
 C<< $c->stash->{variants} >>. This structure is exactly the same as
-that which is passed into L<HTTP::Negotiate>, save for two exceptions:
+that which is passed into L<HTTP::Negotiate>, save for these
+exceptions:
 
 =over 4
 
@@ -89,6 +128,11 @@ anything that can be consumed by a view or middleware component, e.g.,
 a file handle or any other kind of supported object.
 
 =item 2.
+
+L<Path::Class::File> objects get special treatment, as they are what
+the initial static variant list is made out of.
+
+=item 3.
 
 Append an additional integer to the end of a variant's record to
 supply an artificial C<Last-Modified> value as a UNIX time stamp.
