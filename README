@@ -2,7 +2,7 @@ NAME
     CatalystX::Action::Negotiate - ActionRole for content negotiation
 
 VERSION
-    Version 0.01
+    Version 0.03
 
 SYNOPSIS
         sub default :Path :Does('+CatalystX::Action::Negotiate') {
@@ -64,28 +64,33 @@ DESCRIPTION
         the client already has the latest version of the document.
 
     6.  If the action has not terminated the response by now, it sets the
-        response body to the variant and the status to 200.
+        response body to the variant and the status to 200. If you need to,
+        you can still manipulate it in a subsequent (e.g. "end") handler.
 
-        The calling controller action is sandwiched between the
-        variant-generating operation and the variant-selecting operation. It
-        is placed as an "ARRAY" reference for your convenience in
-        "$c->stash->{variants}". This structure is exactly the same as that
-        which is passed into HTTP::Negotiate, save for these exceptions:
+    The calling controller action is sandwiched between the
+    variant-generating operation and the variant-selecting operation. It is
+    placed as an "ARRAY" reference for your convenience in
+    "$c->stash->{variants}". This structure is exactly the same as that
+    which is passed into HTTP::Negotiate, save for these exceptions:
 
-        1.  Variants do not need to be a string identifier, but in fact can
-            be anything that can be consumed by a view or middleware
-            component, e.g., a file handle or any other kind of supported
-            object.
+    1.  Variants do not need to be a string identifier, but in fact can be
+        anything that can be consumed by a view or middleware component,
+        e.g., a file handle or any other kind of supported object.
 
-        2.  Path::Class::File objects get special treatment, as they are
-            what the initial static variant list is made out of.
+    2.  Path::Class::File objects get special treatment, as they are what
+        the initial static variant list is made out of.
 
-        3.  Append an additional integer to the end of a variant's record to
-            supply an artificial "Last-Modified" value as a UNIX time stamp.
+    3.  Append an additional integer to the end of a variant's record to
+        supply an artificial "Last-Modified" value as a UNIX time stamp.
 
-        Otherwise, consult HTTP::Negotiate for how to construct the records.
-        This modification enables you to mix static variants in with dynamic
-        ones, or overwrite the list with purely dynamic variants.
+    Otherwise, consult HTTP::Negotiate for how to construct the records.
+    This modification enables you to mix static variants in with dynamic
+    ones, or overwrite the list with purely dynamic variants.
+
+    Note that this module may conflict with
+    Catalyst::Plugin::Static::Simple. In future releases I will attempt to
+    bring this module up to par so that it can be a viable replacement, or
+    at the very least be a better cohabitant.
 
 SEE ALSO
     *   Catalyst::Action
@@ -133,6 +138,6 @@ POD ERRORS
     Hey! The above document had some coding errors, which are explained
     below:
 
-    Around line 388:
-        You forgot a '=back' before '=head1'
+    Around line 137:
+        Unknown directive: =head
 
