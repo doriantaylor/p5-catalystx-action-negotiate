@@ -273,7 +273,7 @@ before execute => sub {
 
         # note mtime does not get touched by HTTP::Negotiate; indeed
         # it gets stripped off with the return value
-        push @variants, [$v, $qs, $self->mimetype($v->stringify),
+        push @variants, [$v, $qs, $self->mimetype($v->resolve->stringify),
                          undef, undef, undef, $st->size, $st->mtime ];
     }
 
