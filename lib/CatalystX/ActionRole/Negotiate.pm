@@ -27,7 +27,10 @@ our $VERSION = '0.05';
 =head1 SYNOPSIS
 
     sub default :Path :Does('+CatalystX::ActionRole::Negotiate') {
-        my ($self, $c) = @_;
+        my ($self, $c, @args) = @_;
+
+        # tell it to use args rather than $c->req->path
+        $c->stash->{negotiate_use_args} = 1;
 
         # obtain variants (if you care)
         my @variants = @{$c->stash->{variants}};
@@ -146,7 +149,7 @@ cohabitant.
 before execute => sub {
 
     my $self = shift;
-    my ($ctl, $c) = @_;
+    my ($ctl, $c, @args) = @_;
 
     my $req  = $c->req;
     my $resp = $c->res;
@@ -155,23 +158,31 @@ before execute => sub {
 
     my $root = Path::Class::Dir->new($c->config->{root});
 
-    $c->log->debug("trying $root");
+    my @ps;
 
-    # get a clean URI path. (unfortunately Path::Class doesn't get it
-    # this clean)
-    my @ps = map { (/^([^;]*)(?:;.*)?$/) } split m!/+!, $req->path;
-    my $i = 0;
-    while ($i < @ps) {
-        if ($ps[$i] eq '' or $ps[$i] eq '.') {
-            splice @ps, $i, 1;
-        }
-        elsif ($ps[$i] eq '..') {
-            $i > 0 ? splice @ps, $i-1, 2 : splice @ps, $i, 1;
-        }
-        else {
-            $i++;
+    # XXX flip this later maybe
+    if ($c->stash->{negotiate_use_args}) {
+        @ps = @args;
+    }
+    else {
+        # get a clean URI path. (unfortunately Path::Class doesn't get it
+        # this clean)
+        @ps = map { (/^([^;]*)(?:;.*)?$/) } split m!/+!, $req->path;
+        my $i = 0;
+        while ($i < @ps) {
+            if ($ps[$i] eq '' or $ps[$i] eq '.') {
+                splice @ps, $i, 1;
+            }
+            elsif ($ps[$i] eq '..') {
+                $i > 0 ? splice @ps, $i-1, 2 : splice @ps, $i, 1;
+            }
+            else {
+                $i++;
+            }
         }
     }
+
+    $c->log->debug('Negotiate: trying ' . $root->file(@ps));
 
     # if the path terminates with a slash, what does it mean?
 
@@ -200,7 +211,8 @@ before execute => sub {
     # the request had no trailing slash and what was found was a dir,
     # 301 to a url with a trailing slash.
 
-    my $slash = $req->path =~ m!/(?:;[^/]*)?$!;
+    my $slash = $c->stash->{negotiate_use_args} ? undef :
+        $req->path =~ m!/(?:;[^/]*)?$!;
     my $dpath = $root->file(@ps, 'index');
     my $fpath = $root->file(@ps);
 
@@ -317,7 +329,7 @@ after execute => sub {
     # select if not in there (hi chrome)
     my $hdr = $req->headers;
     my $acc = $hdr->header('Accept') || '';
-    $c->log->debug('Testing variants against Accept: ' . $acc);
+    $c->log->debug('Negotiate: Testing variants against Accept: ' . $acc);
     $hdr->push_header(Accept => '*/*;q=0.5') unless $acc and $acc =~ m!\*/\*!;
     # perform the negotiation
 
@@ -360,18 +372,18 @@ after execute => sub {
         if ($slash and $f{$chosen}) {
             # remove the slash and redirect
             $uri->path_segments('', @ps);
-            $c->log->debug("Removed slash from $uri");
+            $c->log->debug("Negotiate: Removed slash from $uri");
             $c->res->redirect($uri, 301) unless $uri->eq($req->uri);
         }
         elsif (!$slash and $i{$chosen}) {
             # add the slash and redirect
             $uri->path_segments('', @ps, '');
-            $c->log->debug("Added slash to $uri");
+            $c->log->debug("Negotiate: Added slash to $uri");
             $c->res->redirect($uri, 301) unless $uri->eq($req->uri);
         }
         else {
             #noop
-            $c->log->debug('No URI path to fix');
+            $c->log->debug('Negotiate: No URI path to fix');
         }
 
         # replace body with reference to body
@@ -382,7 +394,7 @@ after execute => sub {
 
     if ($type) {
         $type .= ";charset=$charset" if $charset;
-        $c->log->debug("setting content type to $type");
+        $c->log->debug("Negotiate: setting content type to $type");
         $rhdr->content_type($type);
     }
 
@@ -393,7 +405,7 @@ after execute => sub {
         $rhdr->last_modified($mtime);
         my $ims = $req->headers->if_modified_since;
         if ($ims and $mtime and $ims >= $mtime) {
-            $c->log->debug($req->uri . ' not modified');
+            $c->log->debug('Negotiate: ' . $req->uri . ' not modified');
             $resp->status(304);
             return;
         }
